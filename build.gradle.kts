@@ -166,3 +166,7 @@ intellijPlatformTesting {
         }
     }
 }
+
+tasks.buildSearchableOptions {
+    jvmArgs("-Duser.language=en", "-Duser.country=US")
+}

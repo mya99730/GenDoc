@@ -1,15 +1,48 @@
-<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>com.github.mya99730.gendoc</id>
-    <name>GenDoc</name>
-    <vendor>mya99730</vendor>
+    <!-- 插件唯一id，不能和其他插件id重复 -->
+    <id>com.java.gendoc</id>
 
+    <!-- 插件名称（在插件市场搜索插件时，搜索的就是这个名称） -->
+    <name>generateJavaDoc</name>
+
+    <!-- 版本号 -->
+    <version>1.0</version>
+
+    <!-- 供应商主页和email -->
+    <vendor email="17638228838@163.com" url="https://github.com/mya99730/GenDoc"/>
+
+    <!-- 插件描述，支持HTML标签 -->
+    <description>
+        生成excel接口文档
+        选择一个方法,选择输出目录和生成文件名,可以生成excel接口文档
+    </description>
+
+    <!-- 插件版本变更信息，支持HTML标签； 将展示在 settings | Plugins 对话框和插件仓库的Web页面 -->
+    <change-notes>
+        文档生成插件初始化
+    </change-notes>
+
+    <!--
+        插件兼容IDEA的最大和最小 build 号，两个属性可以任选一个或者同时使用,
+        please see https://plugins.jetbrains.com/docs/intellij/build-number-ranges.html for description
+    -->
+    <idea-version since-build="173.0"/>
+
+    <!-- 插件所依赖的其他插件的id -->
     <depends>com.intellij.modules.platform</depends>
-
-    <resource-bundle>messages.MyBundle</resource-bundle>
+    <depends>com.intellij.modules.lang</depends>
+    <depends>com.intellij.modules.java</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <toolWindow factoryClass="com.github.mya99730.gendoc.toolWindow.MyToolWindowFactory" id="MyToolWindow"/>
-        <postStartupActivity implementation="com.github.mya99730.gendoc.startup.MyProjectActivity" />
+        <!-- 声明该插件对IDEA core或其他插件的扩展 -->
     </extensions>
+
+    <!-- 编写插件动作 -->
+    <actions>
+        <action id="Doc_PopupAction" class="com.gendoc.action.PopupAction" text="生成接口文档" description="生成接口文档">
+            <add-to-group group-id="GenerateGroup" anchor="first"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl Q"/>
+        </action>
+    </actions>
+
 </idea-plugin>

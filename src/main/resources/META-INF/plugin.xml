@@ -9,7 +9,7 @@
     <version>1.0</version>
 
     <!-- 供应商主页和email -->
-    <vendor email="17638228838@163.com" url="https://github.com/mya99730/GenDoc"/>
+    <vendor>17638228838@163.com</vendor>
 
     <!-- 插件描述，支持HTML标签 -->
     <description>

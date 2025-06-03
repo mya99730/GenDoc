@@ -13,6 +13,8 @@
 
     <!-- 插件描述，支持HTML标签 -->
     <description>
+        Generate Excel interface documentation
+        Select a method, choose the output directory and the file name to generate the Excel interface documentation.
         生成excel接口文档
         选择一个方法,选择输出目录和生成文件名,可以生成excel接口文档
     </description>

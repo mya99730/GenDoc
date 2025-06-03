@@ -6,9 +6,11 @@ import com.gendoc.bo.ApiMethodInfoBO;
 import com.gendoc.bo.ParameterInfoBO;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
+import com.intellij.psi.impl.source.PsiClassReferenceType;
 import com.intellij.psi.javadoc.PsiDocComment;
 import com.intellij.psi.javadoc.PsiDocTag;
 import com.intellij.psi.search.GlobalSearchScope;
+import com.intellij.psi.util.PsiTreeUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,9 +35,8 @@ public class PsiUtils {
             // 形参列表
             Map<String, String> formalParamComments = getParamComments(methodDocComment, "param");
             String paramName = param.getName();
-            String paramType = param.getType().getCanonicalText();
             String paramDesc = formalParamComments.getOrDefault(paramName, "");
-            ParameterInfoBO parameterInfoBO = buildParameterInfoBO(method.getProject(), paramName, paramType, paramDesc);
+            ParameterInfoBO parameterInfoBO = buildParameterInfoBO(method.getProject(), paramName, param.getType(), paramDesc, param);
             parameters.add(parameterInfoBO);
         }
         // 方法返回参数信息
@@ -56,9 +57,8 @@ public class PsiUtils {
         }
 
         Map<String, String> returnParamComment = getParamComments(method.getDocComment(), "return");
-        String returnType = method.getReturnType().getCanonicalText();
         String returnParamDesc = returnParamComment.get("return");
-        return buildParameterInfoBO(method.getProject(), "", returnType, returnParamDesc);
+        return buildParameterInfoBO(method.getProject(), "", method.getReturnType(), returnParamDesc, method);
     }
 
     private static Map<String, String> getParamComments(PsiDocComment methodDocComment, String tagName) {
@@ -105,28 +105,117 @@ public class PsiUtils {
         List<ParameterInfoBO> fields = new ArrayList<>();
         for (PsiField field : psiClass.getFields()) {
             String fieldName = field.getName();
-            String fieldType = field.getType().getCanonicalText();
             String fieldComment = getFieldComment(field);
-            ParameterInfoBO fieldInfo = buildParameterInfoBO(psiClass.getProject(), fieldName, fieldType, fieldComment);
+            ParameterInfoBO fieldInfo = buildParameterInfoBO(psiClass.getProject(), fieldName, field.getType(), fieldComment, field);
             fields.add(fieldInfo);
         }
         return fields;
     }
 
-    private static @Nullable ParameterInfoBO buildParameterInfoBO(Project project, String fieldName, String fieldType,
-                                                                  String fieldComment) {
-        ParameterInfoBO fieldInfo = new ParameterInfoBO(fieldName, fieldType, fieldComment);
-        if (isPrimitiveType(fieldType)) {
-            log.info("参数是基本类型，参数名：{}", fieldName);
+
+    // 新增：提取原始类名的方法
+    private static String extractRawClassName(String fullType) {
+        int genericStart = fullType.indexOf('<');
+        return (genericStart > 0) ?
+                fullType.substring(0, genericStart).trim() :
+                fullType.trim();
+    }
+
+    private static @Nullable ParameterInfoBO buildParameterInfoBO(
+            Project project,
+            String fieldName,
+            PsiType fieldType,
+            String fieldComment,
+            PsiElement context) { // 新增上下文参数
+
+        String fieldTypeName = fieldType.getCanonicalText();
+        log.info("开始解析字段：{}，类型为：{}", fieldName, fieldTypeName);
+
+        // 处理基本类型
+        if (isPrimitiveType(fieldTypeName)) {
+            return new ParameterInfoBO(fieldName, fieldTypeName, fieldComment);
+        }
+
+        // 解析原始类
+        String rawClassName = extractRawClassName(fieldTypeName);
+        PsiClass rawClass = JavaPsiFacade.getInstance(project)
+                .findClass(rawClassName, GlobalSearchScope.allScope(project));
+
+        if (rawClass == null) {
+            log.warn("未找到字段类：{}", rawClassName);
+            return new ParameterInfoBO(fieldName, fieldTypeName, fieldComment);
+        }
+
+        ParameterInfoBO fieldInfo = new ParameterInfoBO(fieldName, fieldTypeName, fieldComment);
+        // 普通类解析字段
+        fieldInfo.getChildParamList().addAll(parseClassFields(rawClass));
+
+        // 处理泛型参数
+        if (fieldType instanceof PsiClassType) {
+            PsiType[] typeParams = ((PsiClassType) fieldType).getParameters();
+            for (PsiType paramType : typeParams) {
+                ParameterInfoBO nestedParam = buildParameterInfoBO(
+                        project,
+                        "",
+                        paramType,
+                        "",
+                        context // 传递相同上下文
+                );
+                if (nestedParam != null) {
+                    // 添加空行
+                    fieldInfo.getChildParamList().add(new ParameterInfoBO());
+                    fieldInfo.getChildParamList().add(nestedParam);
+                }
+            }
+        }
+
+        // 集合类处理
+        if (isCollectionType(rawClass.getQualifiedName())) {
             return fieldInfo;
         }
-        PsiClass fieldClass = JavaPsiFacade.getInstance(project).findClass(fieldType, GlobalSearchScope.allScope(project));
-        if (null == fieldClass) {
-            log.info("未找到参数类：{}", fieldType);
-            return fieldInfo;
-        }
-        fieldInfo.getChildParamList().addAll(parseClassFields(fieldClass));
         return fieldInfo;
+    }
+
+    /**
+     * 解析泛型参数的实际类型（不依赖外部工具类）
+     */
+    private static PsiType resolveGenericType(PsiTypeParameter typeParam, PsiElement context) {
+        // 场景1：方法级泛型（如 <T> T parseJson()）
+        if (typeParam.getOwner() instanceof PsiMethod) {
+            log.info("方法级泛型：{}", typeParam.getName());
+            PsiMethod method = (PsiMethod) typeParam.getOwner();
+            PsiMethodCallExpression callExpr = PsiTreeUtil.getParentOfType(context, PsiMethodCallExpression.class);
+            if (callExpr != null) {
+                // ✅ 核心：直接使用 resolveMethodGenerics() 获取类型替换器
+                PsiSubstitutor substitutor = callExpr.resolveMethodGenerics().getSubstitutor();
+                return substitutor.substitute(typeParam);
+            }
+        }
+
+        // 场景2：类级泛型（如 Response<T>）
+        else if (typeParam.getOwner() instanceof PsiClass) {
+            log.info("类级泛型：{}", typeParam.getName());
+            PsiClass ownerClass = (PsiClass) typeParam.getOwner();
+            PsiClassType[] extendsTypes = ownerClass.getExtendsListTypes();
+            for (PsiClassType extendsType : extendsTypes) {
+                PsiClass resolvedClass = extendsType.resolve();
+                if (resolvedClass != null) {
+                    PsiSubstitutor substitutor = extendsType.resolveGenerics().getSubstitutor();
+                    return substitutor.substitute(typeParam);
+                }
+            }
+        }
+
+        // 其他场景（如字段泛型）可在此扩展
+
+        return null;
+    }
+
+    private static boolean isCollectionType(String className) {
+        return className != null && (className.equals("java.util.List")
+                || className.equals("java.util.Set")
+                || className.equals("java.util.Map")
+                || className.equals("java.util.Collection"));
     }
 
     private static String getFieldComment(PsiField field) {

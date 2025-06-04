@@ -44,15 +44,38 @@ public class ExcelExporter {
             writeParameter(field, dataList, (short) 0);
         }
 
+        // 新增 sheet 名称规范化处理
+        String sheetName = methodInfo.getMethodName();
+        String sanitizedSheetName = normalizeSheetName(sheetName);
         // 写入 Excel 文件
         EasyExcel.write(new File(filePath))
                 .head(ParameterDataBO.class)
                 .registerWriteHandler(new ColorTagStyleHandler(dataList))
-                .sheet(methodInfo.getMethodName())
+                .sheet(sanitizedSheetName)
                 .doWrite(dataList);
 
         // 自动调整列宽
-        adjustColumnWidth(filePath, methodInfo.getMethodName());
+        adjustColumnWidth(filePath, sanitizedSheetName);
+    }
+
+    private static String normalizeSheetName(String originalName) {
+        // 1. 替换非法字符为下划线
+        String sanitized = originalName.replaceAll("[\\\\/:*?\\[\\]<>]", "_");
+
+        // 2. 截断长度到31字符
+        if (sanitized.length() > 31) {
+            sanitized = sanitized.substring(0, 31);
+        }
+
+        // 3. 处理首尾的特殊字符
+        sanitized = sanitized.replaceAll("^'+", "").replaceAll("'+$", "");
+
+        // 4. 防止空名称
+        if (sanitized.trim().isEmpty()) {
+            return "Sheet1";
+        }
+
+        return sanitized;
     }
 
     private static void adjustColumnWidth(String filePath, String sheetName) {

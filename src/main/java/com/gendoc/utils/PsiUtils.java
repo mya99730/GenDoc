@@ -36,7 +36,7 @@ public class PsiUtils {
             Map<String, String> formalParamComments = getParamComments(methodDocComment, "param");
             String paramName = param.getName();
             String paramDesc = formalParamComments.getOrDefault(paramName, "");
-            ParameterInfoBO parameterInfoBO = buildParameterInfoBO(method.getProject(), paramName, param.getType(), paramDesc, param);
+            ParameterInfoBO parameterInfoBO = buildParameterInfoBO(method.getProject(), paramName, param.getType(), paramDesc);
             parameters.add(parameterInfoBO);
         }
         // 方法返回参数信息
@@ -58,7 +58,7 @@ public class PsiUtils {
 
         Map<String, String> returnParamComment = getParamComments(method.getDocComment(), "return");
         String returnParamDesc = returnParamComment.get("return");
-        return buildParameterInfoBO(method.getProject(), "", method.getReturnType(), returnParamDesc, method);
+        return buildParameterInfoBO(method.getProject(), "", method.getReturnType(), returnParamDesc);
     }
 
     private static Map<String, String> getParamComments(PsiDocComment methodDocComment, String tagName) {
@@ -90,13 +90,14 @@ public class PsiUtils {
     private static boolean isPrimitiveType(String type) {
         Set<String> primitives = new HashSet<>(Arrays.asList(
                 // 基本类型
-                "int", "long", "double", "float", "boolean", "char", "byte", "short",
+                "int[]", "long[]", "double[]", "float[]", "boolean[]", "char[]", "byte[]", "short[]",
                 // 包装类型（简单类名）
-                "Integer", "Long", "Double", "Float", "Boolean", "Character", "Byte", "Short", "String",
+                "Integer[]", "Long[]", "Double[]", "Float[]", "Boolean[]", "Character[]", "Byte[]", "Short[]", "String[]",
+                "Date[]",
                 // 全限定类名版本
                 "java.lang.Integer", "java.lang.Long", "java.lang.Double", "java.lang.Float",
                 "java.lang.Boolean", "java.lang.Character", "java.lang.Byte", "java.lang.Short",
-                "java.lang.String"
+                "java.lang.String", "java.util.Date"
         ));
         return primitives.contains(type);
     }
@@ -106,7 +107,7 @@ public class PsiUtils {
         for (PsiField field : psiClass.getFields()) {
             String fieldName = field.getName();
             String fieldComment = getFieldComment(field);
-            ParameterInfoBO fieldInfo = buildParameterInfoBO(psiClass.getProject(), fieldName, field.getType(), fieldComment, field);
+            ParameterInfoBO fieldInfo = buildParameterInfoBO(psiClass.getProject(), fieldName, field.getType(), fieldComment);
             fields.add(fieldInfo);
         }
         return fields;
@@ -125,10 +126,9 @@ public class PsiUtils {
             Project project,
             String fieldName,
             PsiType fieldType,
-            String fieldComment,
-            PsiElement context) { // 新增上下文参数
+            String fieldComment) { // 新增上下文参数
 
-        String fieldTypeName = fieldType.getCanonicalText();
+            String fieldTypeName = fieldType.getCanonicalText();
         log.info("开始解析字段：{}，类型为：{}", fieldName, fieldTypeName);
 
         // 处理基本类型
@@ -158,9 +158,7 @@ public class PsiUtils {
                         project,
                         "",
                         paramType,
-                        "",
-                        context // 传递相同上下文
-                );
+                        "");
                 if (nestedParam != null) {
                     // 添加空行
                     fieldInfo.getChildParamList().add(new ParameterInfoBO());

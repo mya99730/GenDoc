@@ -82,10 +82,6 @@ public class PopupAction extends AnAction {
 
         try {
             ApiMethodInfoBO methodInfoBO = PsiUtils.parseMethodInfo(method);
-            if (null == methodInfoBO) {
-                log.info("方法解析结果为空");
-                return;
-            }
             ExcelExporter.exportToExcel(methodInfoBO, outputPath);
             Messages.showInfoMessage("接口文档已生成到：" + outputPath, "成功");
             log.info("接口文档已成功导出至：" + outputPath);

@@ -94,7 +94,7 @@ public class PsiUtils {
                 // 包装类型（简单类名）
                 "Integer", "Long", "Double", "Float", "Boolean", "Character", "Byte", "Short", "String",
                 // 全限定类名版本
-                "int", "java.lang.Long", "java.lang.Double", "java.lang.Float",
+                "java.lang.Integer", "java.lang.Long", "java.lang.Double", "java.lang.Float",
                 "java.lang.Boolean", "java.lang.Character", "java.lang.Byte", "java.lang.Short",
                 "java.lang.String"
         ));

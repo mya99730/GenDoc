@@ -3,7 +3,7 @@
     <id>com.java.gendoc</id>
 
     <!-- 插件名称（在插件市场搜索插件时，搜索的就是这个名称） -->
-    <name>generateJavaDoc</name>
+    <name>GenDoc</name>
 
     <!-- 版本号 -->
     <version>1.0</version>

@@ -6,7 +6,6 @@ import com.gendoc.bo.ApiMethodInfoBO;
 import com.gendoc.bo.ParameterInfoBO;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.*;
-import com.intellij.psi.impl.source.PsiClassReferenceType;
 import com.intellij.psi.javadoc.PsiDocComment;
 import com.intellij.psi.javadoc.PsiDocTag;
 import com.intellij.psi.search.GlobalSearchScope;
@@ -90,6 +89,7 @@ public class PsiUtils {
     private static boolean isPrimitiveType(String type) {
         Set<String> primitives = new HashSet<>(Arrays.asList(
                 // 基本类型
+                "int", "long", "double", "float", "boolean", "char", "byte", "short","String","Date",
                 "int[]", "long[]", "double[]", "float[]", "boolean[]", "char[]", "byte[]", "short[]",
                 // 包装类型（简单类名）
                 "Integer[]", "Long[]", "Double[]", "Float[]", "Boolean[]", "Character[]", "Byte[]", "Short[]", "String[]",
@@ -97,7 +97,9 @@ public class PsiUtils {
                 // 全限定类名版本
                 "java.lang.Integer", "java.lang.Long", "java.lang.Double", "java.lang.Float",
                 "java.lang.Boolean", "java.lang.Character", "java.lang.Byte", "java.lang.Short",
-                "java.lang.String", "java.util.Date"
+                "java.lang.String", "java.util.Date",
+                // 空值
+                "void", "java.lang.Void"
         ));
         return primitives.contains(type);
     }
@@ -122,7 +124,7 @@ public class PsiUtils {
                 fullType.trim();
     }
 
-    private static @Nullable ParameterInfoBO buildParameterInfoBO(
+    private static ParameterInfoBO buildParameterInfoBO(
             Project project,
             String fieldName,
             PsiType fieldType,

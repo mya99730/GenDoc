@@ -94,7 +94,7 @@ intellijPlatform {
 
         ideaVersion {
             sinceBuild = providers.gradleProperty("pluginSinceBuild")
-//            untilBuild = providers.gradleProperty("pluginUntilBuild")
+            untilBuild = providers.gradleProperty("pluginUntilBuild")
         }
     }
 
@@ -144,6 +144,11 @@ tasks {
 
     publishPlugin {
         dependsOn(patchChangelog)
+    }
+
+    buildPlugin {
+        // 简单地从运行时类路径复制 jar 文件
+        from(configurations.runtimeClasspath)
     }
 }
 

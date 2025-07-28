@@ -13,6 +13,7 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileChooser.FileChooser;
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectUtil;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
@@ -57,7 +58,7 @@ public class PopupAction extends AnAction {
         VirtualFile selectedDir = FileChooser.chooseFile(
                 FileChooserDescriptorFactory.createSingleFolderDescriptor(),
                 project,
-                project.getBaseDir());
+                ProjectUtil.guessProjectDir(project));
         if (null == selectedDir) {
             log.warn("未选择输出目录");
             return;
